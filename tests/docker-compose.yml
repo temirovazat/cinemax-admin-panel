@@ -1,0 +1,24 @@
+services:
+  django:
+    build: ../backend
+    ports:
+      - 8000:8000
+    env_file:
+      - ./.env
+
+  tests:
+    image: postman/newman:5.3.1
+    volumes:
+      - ./src:/etc/newman
+    command: run cinemax_API.postman_collection.json --env-var "base_url=django:8000"
+    depends_on:
+      - django
+
+  postgres:
+    image: postgres:14.5-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - ../infra/data/cinemax_database.sql:/docker-entrypoint-initdb.d/cinemax_database.sql
+    env_file:
+      - ./.env

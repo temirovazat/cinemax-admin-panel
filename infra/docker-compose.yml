@@ -1,0 +1,33 @@
+services:
+  django:
+    image: temirovazat/django_admin_panel:1.0.0
+    volumes:
+      - static_value:/opt/django_admin_panel/static/
+      - media_value:/opt/django_admin_panel/media/
+    env_file:
+      - ./.env
+
+  postgres:
+    image: postgres:14.5-alpine
+    expose:
+      - 5432
+    volumes:
+      - ./data/cinemax_database.sql:/docker-entrypoint-initdb.d/cinemax_database.sql
+    env_file:
+      - ./.env
+
+  nginx:
+    image: nginx:1.23.2
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+      - static_value:/var/www/static/
+      - media_value:/var/www/media/
+    depends_on:
+      - django
+
+volumes:
+  static_value:
+  media_value:

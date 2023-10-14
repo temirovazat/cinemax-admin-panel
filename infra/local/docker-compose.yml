@@ -1,0 +1,45 @@
+x-postgres-env: &postgres-env
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: 5432
+  POSTGRES_DB: cinemax_database
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+
+x-django-env: &django-env
+  DJANGO_SUPERUSER_USERNAME: admin
+  DJANGO_SUPERUSER_EMAIL: admin@mail.ru
+  DJANGO_SUPERUSER_PASSWORD: 1234
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,[::1],django
+  DJANGO_SECRET_KEY: django-insecure-_o)z83b+i@jfjzbof_jn9#%dw*5q2yy3r6zzq-3azof#(vkf!#
+
+services:
+  django:
+    build: ../../backend
+    ports:
+      - 8000:8000
+    entrypoint: > 
+      sh -c "python manage.py migrate --fake movies 0001_initial &&
+             python manage.py migrate &&
+             python manage.py createsuperuser --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    environment:
+      PYTHONUNBUFFERED: 1
+      DJANGO_DEBUG: "True"
+      <<: [*postgres-env, *django-env]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:14.5-alpine
+    ports:
+      - 5432:5432
+    volumes:
+      - ../data/cinemax_database.sql:/docker-entrypoint-initdb.d/cinemax_database.sql
+    environment:
+      <<: *postgres-env
+    healthcheck:
+      test: pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      interval: 5s
+      timeout: 5s
+      retries: 5
